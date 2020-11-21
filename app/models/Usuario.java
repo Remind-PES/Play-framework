@@ -12,6 +12,8 @@ import java.util.List;
 public class Usuario extends Model {
     public String nombre;
     public String contrasena;
+    static int B=10;
+
 
     @OneToMany(mappedBy="user")
     public List<Tarea> tareas= new ArrayList<Tarea>();
