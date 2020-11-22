@@ -6,16 +6,50 @@ import play.db.jpa.JPA;
 import play.mvc.*;
 import java.util.Date;
 import java.util.*;
-
+import play.data.validation.*;
 import models.*;
 import play.mvc.results.RenderText;
 
 import javax.persistence.Query;
 
 public class Application extends Controller {
+    @Before
+    static void addUser(){
+        Usuario user=connected();
+        if (user!=null){
+            renderArgs.put("user",user);
+        }
+    }
+    static Usuario connected(){
+        if(renderArgs.get("user")!=null) {
+            return renderArgs.get("user", Usuario.class);
+        }
+        String username=session.get("user");
+        if(username!=null){
+            return Usuario.find("byNombre",username).first();
+        }
+        return null;
+    }
 
     public static void index() {
+       if(connected()!=null){
+          Tareas.index();
+       }
+       render();
+    }
+    public static void register(){
         render();
+    }
+    public static void saveUser(@Valid Usuario user, String verifypassword){
+        validation.required(verifypassword);
+        validation.equals(verifypassword, user.contrasena).message("La contraseña no coincide");
+        if(validation.hasErrors()){
+            render("@register", user,verifypassword);
+        }
+        user.create();
+        session.put("user",user.nombre);
+        flash.success("Bienvenido, " +user.nombre);
+        Tareas.index();
     }
     public void inicializarBDD(){
         Usuario f = new Usuario("marc", "123");
@@ -28,25 +62,31 @@ public class Application extends Controller {
         tar.save();
         }
 
-    public void signUp(String nombre, String contra){
-        Usuario u=Usuario.find("Nombre", nombre).first();
+    public static void signUp(String nombre, String contra){
+        Usuario u=Usuario.find("byNombre", nombre).first();
         if (u==null)
         {
             Usuario f = new Usuario (nombre, contra);
             f.save();
             renderText("Registrado correctamente");
+            session.put("user", u.nombre);
+            flash.success("Registrado correctamente");
         }
-        else renderText("El nombre ya existe");
+        else {
+            flash.error("Error, el usuario ya existe");
+            index();
+        }
     }
     public void logIn(String nombre, String contra) {
         Usuario u = Usuario.find("byNombreAndContrasena", nombre, contra).first();
-        if (u==null) {
-            renderText("Algo salió mal");
+        if (u!=null) {
+            session.put("user", u.nombre);
+            flash.success("Bienvenido, "+u.nombre);
+            Tareas.index();
         }
-        else {
-            renderText("Has iniciado sesión");
-        }
-
+        flash.put("nombre",nombre);
+        flash.error("Error al iniciar sesión");
+        index();
     }
     public void deleteUser(String user){
         Usuario u = Usuario.find("byNombre",user).first();
@@ -61,64 +101,11 @@ public class Application extends Controller {
         }
         else renderText("Usuario "+user+" no encontrado");
     }
-    public void deleteTarea(String descripcion, Usuario user){
-        Tarea t= Tarea.find("byDescripcionAndUser",descripcion, user).first();
-        if(t!=null){
-            user.tareas.remove(t);
-            t.delete();
-            renderText("Tarea borrada correctamente");
-        }
-        else renderText("No existe esa tarea");
+    public static void logout(){
+        session.clear();
+        index();
     }
-   public void anadirTarea(String descripcion, String fecha, String lista, String etiqueta, String user){
-        Tarea t= new Tarea(descripcion, fecha, lista, etiqueta);
-        Usuario u =Usuario.find("byNombre",user).first();
-        if (u!=null){
-            u.tareas.add(t);
-            t.user=u;
-            t.save();
-            renderText("Tarea añadida correctamente");
-        }
-        else renderText("Usuario no encontrado");
-   }
-   public void editarDescripcion(Tarea t, String user, String nuevaDescripcion){
-        Usuario u = Usuario.find("byNombre", user).first();
-        if(u!=null){
-            for(Tarea tar:u.tareas){
-                if (tar==t){
-                    tar.descripcion=nuevaDescripcion;
-                    tar.save();
-                }
-                renderText("Tarea editada");
-            }
 
-        }
-        else renderText("Tarea no encontrada");
-   }
-    public void editarEtiqueta(Tarea t, String user, String nuevaEtiqueta){
-        Usuario u = Usuario.find("byNombre", user).first();
-        if(u!=null){
-            for(Tarea tar:u.tareas){
-                if (tar==t){
-                    tar.etiqueta=nuevaEtiqueta;
-                    tar.save();
-                }
-                renderText("Etiqueta editada");
-            }
-
-        }
-        else renderText("Tarea no encontrada");
-    }
-    public void editarContrasena(String nombre,String nuevaContrasena){
-        Usuario u= Usuario.find("byNombre",nombre).first();
-        if(u!=null){
-            u.contrasena=nuevaContrasena;
-            u.save();
-            renderText("Contraseña editada");
-
-        }
-        else renderText("No se encontró el usuario");
-    }
 
 
 }
