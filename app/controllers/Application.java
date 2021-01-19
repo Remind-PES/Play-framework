@@ -2,8 +2,11 @@ package controllers;
 
 import org.h2.engine.User;
 import play.*;
+import play.db.jpa.GenericModel;
 import play.db.jpa.JPA;
 import play.mvc.*;
+
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.*;
 import play.data.validation.*;
@@ -14,6 +17,7 @@ import javax.persistence.Query;
 
 public class Application extends Controller {
     @Before
+    //S'executa en connectar-se l'usuari
     static void addUser(){
         Usuario user=connected();
         if (user!=null){
@@ -30,18 +34,20 @@ public class Application extends Controller {
         }
         return null;
     }
-
+    //Carrega la pàgina inicial
     public static void index() {
        if(connected()!=null){
           Tareas.index();
        }
        render();
     }
+    //Carrega la vista de registre
     public static void register(){
         render();
     }
+    //Registre de l'usuari
     public static void saveUser(@Valid Usuario user, String verifypassword){
-        validation.required(verifypassword);
+        validation.required(verifypassword).message("Vuelve a introducir la contraseña");
         validation.equals(verifypassword, user.contrasena).message("La contraseña no coincide");
         if(validation.hasErrors()){
             render("@register", user,verifypassword);
@@ -51,35 +57,44 @@ public class Application extends Controller {
         flash.success("Bienvenido, " +user.nombre);
         Tareas.index();
     }
+    //Inicialitza la base de dades (no s'utilitza)
     public void inicializarBDD(){
         Usuario f = new Usuario("marc", "123");
         f.save();
-        Tarea tar = new Tarea( "deberes","13-3-2020", "pendientes","urgente");
+        Tarea tar = new Tarea( "deberes", "2020-3-15","pendientes","urgente");
         tar.save();
         f.tareas.add(tar);
         f.save();
         tar.user=f;
         tar.save();
         }
-
+        //Registre per a Android
     public static void signUp(String nombre, String contra){
         Usuario u=Usuario.find("byNombre", nombre).first();
         if (u==null)
         {
             Usuario f = new Usuario (nombre, contra);
             f.save();
-            renderText("Registrado correctamente");
+            renderText("Correcto");
             session.put("user", u.nombre);
             flash.success("Registrado correctamente");
         }
         else {
+            renderText("No se ha podido registrar");
             flash.error("Error, el usuario ya existe");
             index();
         }
     }
-    public void logIn(String nombre, String contra) {
+    //Iniciar sessió depenent de si és admin o usuari normal
+    public static void logIn(String nombre, String contra) {
         Usuario u = Usuario.find("byNombreAndContrasena", nombre, contra).first();
+
         if (u!=null) {
+            if ((u.nombre.equals("admin"))&&(u.contrasena.equals("admin")))
+            {
+                session.put("user", u.nombre);
+                Tareas.adminIndex();
+            }
             session.put("user", u.nombre);
             flash.success("Bienvenido, "+u.nombre);
             Tareas.index();
@@ -88,7 +103,42 @@ public class Application extends Controller {
         flash.error("Error al iniciar sesión");
         index();
     }
-    public void deleteUser(String user){
+    //Iniciar sessió en Android
+    public static void logInAndroid(String nombre, String contra){
+        Usuario u = Usuario.find("byNombreAndContrasena", nombre, contra).first();
+
+        if (u!=null) {
+            if ((u.nombre.equals("admin"))&&(u.contrasena.equals("admin")))
+            {
+                session.put("user", u.nombre);
+                renderText("Correcto");
+            }
+            session.put("user", u.nombre);
+            flash.success("Bienvenido, "+u.nombre);
+            renderText("Correcto");
+        }
+        flash.put("nombre",nombre);
+        flash.error("Error al iniciar sesión");
+        renderText("error");
+    }
+    //Cargar la lista de tareas en android
+    public static void ListaTareasAndroid(String nombre){
+        Usuario u =Usuario.find("byNombre",nombre).first();
+        if(u!=null){
+            renderJSON(u.tareas);
+        }
+        else{
+            renderText("error");
+        }
+
+    }
+    //Borrar usuario
+    public static void borrarUser(long id){
+        Usuario u = Usuario.findById(id);
+        deleteUser(u.nombre);
+    }
+    //Borrar usuario
+    public static void deleteUser(String user){
         Usuario u = Usuario.find("byNombre",user).first();
         if(u!=null){
             if(!u.tareas.isEmpty()){
@@ -97,10 +147,11 @@ public class Application extends Controller {
                 }
             }
             u.delete();
-            renderText("Usuario "+user+" borrado correctamente");
+            Tareas.adminIndex();
         }
         else renderText("Usuario "+user+" no encontrado");
     }
+    //Cerrar sesión
     public static void logout(){
         session.clear();
         index();
