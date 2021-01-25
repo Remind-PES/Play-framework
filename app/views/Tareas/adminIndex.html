@@ -75,7 +75,7 @@
 #{form @returnContador()}
     #{field 'nombre'}
     <p class="${field.errorClass}">
-        <strong>Mostrar cantidad de tareas de:</strong> <input type="text" name="${field.name}" size="16" value="${nombre}"> *
+        <strong>Mostrar cantidad de tareas por lista de:</strong> <input type="text" name="${field.name}" size="16" value="${nombre}"> *
         <span class="error">${field.error}</span>
     </p>
     #{/field}
@@ -90,6 +90,21 @@
     Realizadas:${realizadas}
 </p>
 #{/if}
+#{form @maxTareas()}
+<p>
+<strong>Quienes son los usuarios con mas tareas pendientes?</strong>
+</p>
+<p class="buttons">
+    <input type="submit" value="Mostrar">
+<p>
+#{/form}
+#{if usuarios}
+<p>
+    El/Los usuarios con mas tareas pendientes es/son: ${usuarios}, que tiene/n ${max} tarea/s pendientes.
+</p>
+#{/if}
+
+
 #{form @logout()}
 <p class="buttons">
     <input type="submit" value="Cerrar sesión">

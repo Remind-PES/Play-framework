@@ -168,6 +168,7 @@ public class Tareas extends Application{
             render("Tareas/adminIndex.html",users);
         }
     }
+    //Devuelve el numero de tareas de un usuario clasificadas por lista
     public static void returnContador(String nombre){
         Usuario u=Usuario.find("byNombre", nombre).first();
         int pendientes=0, realizadas=0, encurso=0;
@@ -186,6 +187,32 @@ public class Tareas extends Application{
         else{
             render("Tareas/adminIndex.html",users);
         }
+    }
+    public static void maxTareas(){
+        List<Usuario> users = Usuario.findAll();
+        String usuarios=null;
+        int cont = 0;
+        int max=0;
+        for (int i=0;i<users.size();i++)
+        {
+            for(int y = 0; y<users.get(i).tareas.size();y++)
+            {
+                if (users.get(i).tareas.get(y).lista.equals("Pendiente")){
+                    cont++;
+                }
+            }
+            if(cont==max){
+                usuarios=usuarios+", "+users.get(i).nombre;
+                cont=0;
+            }
+            if(cont>max){
+                usuarios=users.get(i).nombre;
+                max=cont;
+                cont=0;
+            }
+
+        }
+        render("Tareas/adminIndex.html", usuarios, max, users);
     }
     //Editar la descripción de una tarea (no se usa)
     public void editarDescripcion(Tarea t, String user, String nuevaDescripcion){

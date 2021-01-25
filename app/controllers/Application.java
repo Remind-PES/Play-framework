@@ -59,14 +59,22 @@ public class Application extends Controller {
     }
     //Inicialitza la base de dades (no s'utilitza)
     public void inicializarBDD(){
-        Usuario f = new Usuario("marc", "123");
+        Usuario f = new Usuario("marc1", "12345");
         f.save();
-        Tarea tar = new Tarea( "deberes", "2020-3-15","pendientes","urgente");
+        Tarea tar = new Tarea( "deberes", "2021-3-15","Pendiente","urgente");
         tar.save();
         f.tareas.add(tar);
         f.save();
         tar.user=f;
         tar.save();
+        Usuario us = new Usuario("marc2", "12345");
+        us.save();
+        Tarea tarea = new Tarea( "pasear", "2021-3-15","Pendiente","urgente");
+        tarea.save();
+        us.tareas.add(tar);
+        us.save();
+        tarea.user=us;
+        tarea.save();
         }
         //Registre per a Android
     public static void signUp(String nombre, String contra){
